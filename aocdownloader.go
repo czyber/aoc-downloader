@@ -1,6 +1,8 @@
 package aocdownloader
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -35,13 +37,19 @@ func getCachedInput(year string, day string) (string, error) {
 	}
 	defer inputFile.Close()
 
-	input, err := io.ReadAll(inputFile)
-	if err != nil {
+	var lines []string
+	scanner := bufio.NewScanner(inputFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
 		return "", err
 	}
 
-	return string(input), nil
-
+	return strings.Join(lines, "\n"), nil
 }
 
 func getSessionID() string {
@@ -80,6 +88,19 @@ func downloadInput(year string, day string) (string, error) {
 		return "", err
 	}
 
+	var lines []string
+	scanner := bufio.NewScanner(bytes.NewReader(input))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	processedInput := strings.Join(lines, "\n")
+
 	dayPath := getCachePath(year, day)
 	err = os.MkdirAll(dayPath, 0755)
 	if err != nil {
@@ -92,12 +113,12 @@ func downloadInput(year string, day string) (string, error) {
 	}
 	defer inputFile.Close()
 
-	_, err = inputFile.Write(input)
+	_, err = inputFile.WriteString(processedInput)
 	if err != nil {
 		return "", err
 	}
 
-	return string(input), nil
+	return processedInput, nil
 }
 
 func GetInput(year string, day string) (string, error) {
